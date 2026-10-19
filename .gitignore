@@ -18,3 +18,6 @@ TestResults/
 .env
 *.env
 appsettings.*.local.json
+
+# מסמך עבודה פנימי (התוכנית ושלבי העבודה). נשאר במחשב, לא נכנס ל-repo
+PLAN.md

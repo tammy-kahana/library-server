@@ -140,11 +140,9 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.UseStatusCodePages();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Swagger פעיל גם בענן: זה פרויקט הדגמה, וכך אפשר לבדוק את כל ה-endpoints גם ב-Render
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseCors(ClientCorsPolicy);
 
