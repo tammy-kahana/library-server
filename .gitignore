@@ -1,0 +1,20 @@
+# תוצרי בנייה
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# לוגים (NLog)
+logs/
+*.log
+
+# תוצאות בדיקות
+TestResults/
+
+# סודות: לעולם לא נכנסים ל-repo (בפיתוח הם ב-User Secrets, מחוץ לתיקיית הפרויקט)
+.env
+*.env
+appsettings.*.local.json
