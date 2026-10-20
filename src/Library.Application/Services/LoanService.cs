@@ -87,7 +87,7 @@ public class LoanService : ILoanService
         _users.MarkAsChanged(user);
 
         // 4. שמירה אחת = טרנזקציה אחת: העותק, הקוראת וההשאלה נשמרים יחד, או ששום דבר לא נשמר
-        var saveResult = await SaveAsync("העותק נתפס על ידי משתמשת אחרת. נסי שוב.", ct);
+        var saveResult = await _loans.TrySaveChangesAsync("העותק נתפס על ידי משתמשת אחרת. נסי שוב.", ct);
         if (!saveResult.IsSuccess)
         {
             return saveResult.Error!;
@@ -122,7 +122,7 @@ public class LoanService : ILoanService
         loan.BookCopy.Status = CopyStatus.Available;
 
         // שתי החזרות באותו רגע: שתיהן משנות את העותק, ה-Version שלו תופס את השנייה
-        var saveResult = await SaveAsync("ההשאלה עודכנה במקביל. יש לרענן ולנסות שוב.", ct);
+        var saveResult = await _loans.TrySaveChangesAsync("ההשאלה עודכנה במקביל. יש לרענן ולנסות שוב.", ct);
         if (saveResult.IsSuccess)
         {
             _logger.LogInformation("Loan {LoanId} returned (copy {CopyId})", loanId, loan.BookCopyId);
@@ -157,22 +157,5 @@ public class LoanService : ILoanService
     {
         var page = await _loans.GetPagedAsync(query, ct);
         return page.Map(items => _mapper.Map<List<LoanResponse>>(items));
-    }
-
-    /// <summary>
-    /// שמירה של כל השינויים. התנגשות → 409 עם ההודעה שנמסרה.
-    /// ה-Warning ללוג כבר נכתב ב-RepositoryBase, ולכן לא כותבים אותו שוב כאן.
-    /// </summary>
-    private async Task<Result> SaveAsync(string conflictMessage, CancellationToken ct)
-    {
-        try
-        {
-            await _loans.SaveChangesAsync(ct);
-            return Result.Success();
-        }
-        catch (ConcurrencyConflictException)
-        {
-            return Error.Conflict(conflictMessage);
-        }
     }
 }

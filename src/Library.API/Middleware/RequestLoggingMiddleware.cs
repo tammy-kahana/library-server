@@ -25,10 +25,10 @@ public class RequestLoggingMiddleware
             await _next(context);
             Log(context, context.Response.StatusCode, stopwatch);
         }
-        catch
+        catch (Exception ex)
         {
-            // החריגה תהפוך ל-500 ב-ExceptionHandlingMiddleware, שעוטף אותנו מבחוץ
-            Log(context, StatusCodes.Status500InternalServerError, stopwatch);
+            // החריגה תהפוך לתשובה ב-ExceptionHandlingMiddleware, שעוטף אותנו מבחוץ. כאן רושמים את אותו סטטוס
+            Log(context, ExceptionHandlingMiddleware.StatusCodeFor(ex), stopwatch);
             throw;
         }
     }

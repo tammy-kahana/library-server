@@ -9,6 +9,7 @@ namespace Library.Application.Services;
 
 public class CopyService : ICopyService
 {
+    private const string CopyChangedConcurrently = "העותק שונה על ידי משתמשת אחרת. יש לרענן ולנסות שוב.";
 
     private readonly IBookCopyRepository _copies;
     private readonly IBookRepository _books;
@@ -83,7 +84,7 @@ public class CopyService : ICopyService
         }
 
         copy.Status = request.Status;
-        return await SaveCopyChangesAsync(ct);
+        return await _copies.TrySaveChangesAsync(CopyChangedConcurrently, ct);
     }
 
     public async Task<Result> DeleteAsync(int id, CancellationToken ct)
@@ -99,24 +100,8 @@ public class CopyService : ICopyService
             return Error.Conflict("לא ניתן למחוק עותק שיש לו היסטוריית השאלות. ניתן לסמן אותו כ-Lost.");
         }
 
+        // אם מישהי השאילה את העותק בין הקריאה למחיקה, ה-Version לא תואם ומחזירים 409
         _copies.Remove(copy);
-        return await SaveCopyChangesAsync(ct);
-    }
-
-    /// <summary>
-    /// שמירה של שינוי בעותק קיים. אם מישהי השאילה או שינתה את העותק בין הקריאה לשמירה,
-    /// ה-Version כבר לא תואם, ה-Repository זורק ConcurrencyConflictException, ומחזירים 409.
-    /// </summary>
-    private async Task<Result> SaveCopyChangesAsync(CancellationToken ct)
-    {
-        try
-        {
-            await _copies.SaveChangesAsync(ct);
-            return Result.Success();
-        }
-        catch (ConcurrencyConflictException)
-        {
-            return Error.Conflict("העותק שונה על ידי משתמשת אחרת. יש לרענן ולנסות שוב.");
-        }
+        return await _copies.TrySaveChangesAsync(CopyChangedConcurrently, ct);
     }
 }

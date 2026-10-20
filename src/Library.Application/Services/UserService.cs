@@ -54,14 +54,6 @@ public class UserService : IUserService
         user.Role = request.Role;
 
         // User מוגנת ב-Version: אם היא השאילה ספר באותו רגע, אחת הפעולות תקבל התנגשות
-        try
-        {
-            await _users.SaveChangesAsync(ct);
-            return Result.Success();
-        }
-        catch (ConcurrencyConflictException)
-        {
-            return Error.Conflict("המשתמשת עודכנה במקביל. יש לרענן ולנסות שוב.");
-        }
+        return await _users.TrySaveChangesAsync("המשתמשת עודכנה במקביל. יש לרענן ולנסות שוב.", ct);
     }
 }

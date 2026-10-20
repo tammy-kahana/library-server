@@ -4,13 +4,15 @@ using Library.Application.Interfaces;
 using Library.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 
 namespace Library.Infrastructure.Repositories;
 
 /// <summary>
 /// מימוש משותף לכל ה-Repositories: הוספה, מחיקה ושמירה.
-/// כאן, ורק כאן, נתפסת DbUpdateConcurrencyException: היא נרשמת ללוג ברמת Warning
-/// ומתורגמת ל-ConcurrencyConflictException, כך ש-Application לא מכיר את EF.
+/// כאן, ורק כאן, מתורגמות שגיאות השמירה של EF לחריגות של Application (כך ש-Application לא מכיר את EF):
+/// DbUpdateConcurrencyException → ConcurrencyConflictException, וערך ייחודי כפול → DuplicateValueException.
+/// שתיהן נרשמות ללוג ברמת Warning.
 /// </summary>
 public abstract class RepositoryBase<TEntity> : IRepository<TEntity> where TEntity : class
 {
@@ -40,6 +42,13 @@ public abstract class RepositoryBase<TEntity> : IRepository<TEntity> where TEnti
             _logger.LogWarning(ex, "Concurrency conflict while saving {Entities}", entities);
 
             throw new ConcurrencyConflictException("The data was changed by another request.", ex);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            // מרוץ על ערך ייחודי: שתי בקשות עברו יחד את בדיקת "האם כבר קיים?", והאינדקס הייחודי עצר את השנייה
+            _logger.LogWarning(ex, "Unique value rejected by the database");
+
+            throw new DuplicateValueException("A unique value already exists.", ex);
         }
     }
 
